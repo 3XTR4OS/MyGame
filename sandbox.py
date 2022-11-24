@@ -27,26 +27,45 @@ img_folder = os.path.dirname(r'Assets/img/')
 player_img = pygame.image.load(os.path.join(img_folder, 'p1_front.png')).convert()
 
 
-def add_enemys(k=1):
-    return [Enemy() for i in range(k)]
+class Projectile(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((10, 10))
+        self.image.fill(GREEN)
+        self.speedy = 5
+        self.rect = self.image.get_rect()
+        self.rect.bottom = y
+        self.rect.centerx = x
+
+    def update(self):
+        self.rect.y -= self.speedy
+
+        if self.rect.y < 0:
+            self.kill()
 
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.hp = 0
-        self.speed = 5
-        self.image = pygame.Surface((50, 50))
+        self.image = pygame.Surface((30, 30))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.rect.center = (random.randint(0, WIDTH), 0)  # x,y
+        self.rect.x = random.randrange(WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.speedy = random.randrange(4, 10)
 
     def update(self):
-        self.rect.y += self.speed
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT + 10:
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
 
         if self.rect.top > HEIGHT:
-            self.kill()
-            all_sprites.add(add_enemys(1))
+            self.speedy = random.randrange(4, 10)
+            self.reset()
+
+    def reset(self):
+        self.rect.center = (random.randint(self.rect[-1], WIDTH), 0)
 
 
 class Player(pygame.sprite.Sprite):
@@ -57,31 +76,60 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH / 2, HEIGHT - 44)
 
-        self.step = 1
+        self.speedx = 6
+
+    def shoot(self):
+        projectile = Projectile(self.rect.centerx, self.rect.top)
+        all_sprites.add(projectile)
+        projectiles.add(projectile)
 
     def update(self):
-        # self.rect.x += 12
-        if self.rect.left > WIDTH:
-            self.rect.right = 0
 
-        elif self.rect.right < 0:
+        # KEYS
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT]:
+            player.rect.x += player.speedx
+
+        if keys[pygame.K_LEFT]:
+            player.rect.x -= player.speedx
+
+        if keys[pygame.K_UP]:
+            player.speedx += 2
+
+        elif keys[pygame.K_DOWN]:
+            if player.speedx >= 0:
+                player.speedx -= 2
+            else:
+                player.speedx = 0
+
+        if keys[pygame.K_a]:
+            if player.speedx >= 0:
+                player.speedx -= 0.1
+
+        # OUT OF SCREEN
+        if self.rect.right > WIDTH:
             self.rect.right = WIDTH
 
-        elif self.rect.top > HEIGHT:
-            self.rect.y = 0
+        if self.rect.left < 0:
+            self.rect.left = 0
 
-        elif self.rect.bottom < 0:
-            self.rect.y = HEIGHT
-
-        # player.image.fill((random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+        # SHOOT
+        if keys[pygame.K_SPACE]:
+            self.shoot()
 
 
 # SPRITES
 all_sprites = pygame.sprite.Group()
+projectiles = pygame.sprite.Group()
+mobs = pygame.sprite.Group()
+
 player = Player()
-player2 = Player()
 all_sprites.add(player)
-all_sprites.add(add_enemys(3))
+
+for i in range(6):
+    enemy = Enemy()
+    all_sprites.add(enemy)
+    mobs.add(enemy)
 
 # Цикл игры
 running = True
@@ -93,38 +141,27 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_RIGHT]:
-        player.rect.x += player.step
-
-    if keys[pygame.K_LEFT]:
-        player.rect.x -= player.step
-
-    if keys[pygame.K_UP]:
-        player.step += 2
-
-    elif keys[pygame.K_DOWN]:
-        if player.step >= 0:
-            player.step -= 2
-        else:
-            player.step = 0
-
-
-
-    if keys[pygame.K_a]:
-        if player.step >= 0:
-            player.step -= 0.1
-
     # Обновление
     all_sprites.update()
-    print([list(i) for i in list(all_sprites)] if i)
+
+    # hits
+    hits = pygame.sprite.spritecollide(player, mobs, False)
+    hits2 = pygame.sprite.groupcollide(projectiles, mobs, True, True)
+
+    if hits:
+        running = False
+
+    for hit in hits2:
+        enemy = Enemy()
+        all_sprites.add(enemy)
+        mobs.add(enemy)
     # Рендеринг
     screen.fill(BLUE)
     all_sprites.draw(screen)
 
-    # После отрисовки всего, переворачиваем экран
     pygame.display.flip()
 
     # print(FPS)
 
 pygame.quit()
+
