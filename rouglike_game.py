@@ -108,8 +108,11 @@ class CameraGroup(pygame.sprite.Group):
         self.half_h = pygame.display.get_window_size()[1] // 2
 
         # ground
-        self.ground_surf = bg
-        self.ground_rect = self.ground_surf.get_rect(topleft=(0, 0))
+        self.ground_surf1 = bg
+        self.ground_rect1 = self.ground_surf1.get_rect(topleft=(0, 0))
+
+        self.ground_surf2 = bg
+        self.ground_rect2 = self.ground_surf2.get_rect(topleft=self.ground_rect1.topright)
 
     def center_target_camera(self, target):
         self.offset.x = target.rect.centerx - self.half_w
@@ -117,8 +120,9 @@ class CameraGroup(pygame.sprite.Group):
 
     def custom_draw(self, _player):
         self.center_target_camera(_player)
-        ground_offset = self.ground_rect.topleft - self.offset
-        self.display_surface.blit(self.ground_surf, ground_offset)
+        ground_offset = self.ground_rect1.topleft - self.offset
+        self.display_surface.blit(self.ground_surf1, ground_offset)
+        self.display_surface.blit(self.ground_surf2, self.ground_rect1.topright + ground_offset)
 
         # ENEMY OBJECTS COLLISION START
         for sprite in self.sprites():
@@ -149,11 +153,12 @@ class CameraGroup(pygame.sprite.Group):
             # ENEMY OBJECTS COLLISION END
 
             # FIELD
-            if player.rect.topright[0] > self.ground_rect.topright[0] - 20:
-                self.ground_rect = self.ground_surf.get_rect(topleft=(self.ground_rect.topright[0] - 20, 0))
+            # if player.rect.colliderect(self.ground_rect2):
+            #     self.ground_rect1 = self.ground_surf1.get_rect(topleft=(self.ground_rect2.topright[0], 0))
+            #     self.ground_rect1 = self.ground_surf1.get_rect(topleft=(self.ground_rect2.topright[0], 0))
 
-            elif player.rect.topleft[0] < self.ground_rect.topleft[0] + 20:
-                self.ground_rect = self.ground_surf.get_rect(topright=(self.ground_rect.topleft[0] + 20, 0))
+            # elif player.rect.topleft[0] < self.ground_rect.topleft[0] + 20:
+            #     self.ground_rect = self.ground_surf1.get_rect(topright=(self.ground_rect1.topleft[0] + 20, 0))
 
             # elif player.rect.y < self.ground_rect.top:
             #     self.ground_rect = self.ground_surf.get_rect(bottom=player.rect.y - 20)
@@ -161,10 +166,6 @@ class CameraGroup(pygame.sprite.Group):
             # elif player.rect.y > self.ground_rect.bottom:
             #     self.ground_rect = self.ground_surf.get_rect(top=player.rect.y + 20)
             #
-
-
-
-
 
             # elif player.rect.y < self.ground_rect.top:
             #     self.ground_rect = self.ground_surf.get_rect(bottom=player.rect.top)
