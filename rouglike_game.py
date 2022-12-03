@@ -5,8 +5,8 @@ import time
 import pygame
 
 # S E T T I N G S
-WIDTH = 800
-HEIGHT = 800
+WIDTH = 1000
+HEIGHT = 1000
 FPS = 60
 
 pygame.init()
@@ -27,8 +27,16 @@ scroll = [0, 0]
 game_folder = os.path.dirname(r'P:\\PyCharmProjects\\MySuperGame')
 img_folder = os.path.dirname(r'Assets\\img\\')
 player_img_folder = os.path.join(img_folder, 'player_imgs')
-bg = pygame.image.load('Assets\\img\\background\\bg2.jpg').convert()
+bg = pygame.image.load('Assets\\img\\background\\img.png').convert()
+# floor_posx, floor_posy = bg.get_rect().width, bg.get_rect().height
+#
+# bg = bg.subsurface(
+#     ((floor_posx // 8) * 1, (floor_posy // 4) * 1, 30, 30))
+
 enemy_img = pygame.image.load('Assets\\img\\player_imgs\\Enemy2.png')
+
+# imgs.append(sheet.subsurface((30 * x, 0, 30, 30)))
+
 crosshair_img = pygame.image.load('Assets\\img\\crosshair.png').convert()
 crosshair_img.set_colorkey(BLACK)
 
@@ -36,7 +44,6 @@ white_fire_folder = os.path.join(img_folder, r'projectiles\\white_fire')
 
 
 # animation_set = [pygame.image.load(f'{white_fire_folder}\\f{i}.png') for i in range(1, 6 + 1)]
-
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self):
@@ -48,17 +55,12 @@ class Projectile(pygame.sprite.Sprite):
 
         self.image = self.animation_set[self.anim_count // 12]
         self.rect = self.image.get_rect()
-        self.rect.x = player.rect.x
-        self.rect.y = player.rect.y
-
-        # mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.rect.x, self.rect.y = player.rect.x, player.rect.y
         self.speed = 10
         mouse_x, mouse_y = pygame.mouse.get_pos()  # offset_pos = sprite.rect.topleft - self.offset
 
         self.speed_x = (mouse_x - (player.rect.topleft[0] - camera_group.offset.x)) // self.speed
         self.speed_y = (mouse_y - (player.rect.topleft[1] - camera_group.offset.y)) // self.speed
-        print(camera_group.offset.x)
-        print(camera_group.offset.y)
 
     def update(self):
         self.rect.x += self.speed_x
@@ -74,9 +76,26 @@ class Projectile(pygame.sprite.Sprite):
 
         self.anim_count += 1
 
-        if self.rect.y < 0 or self.rect.y > HEIGHT or self.rect.x < 0 or self.rect.x > WIDTH:
-            self.kill()
 
+# class Floor(pygame.sprite.Sprite):
+#     def __init__(self):
+#         pygame.sprite.Sprite.__init__(self)
+#         self.floor = pygame.image.load('Assets\\img\\background\\floor_tiles.png')
+#         self.floor_posx, self.floor_posy = self.floor.get_rect().width, self.floor.get_rect().height
+#         self.floor_now_x = 1
+#         self.floor_now_y = 1
+#         self.image = self.floor.subsurface(
+#             ((self.floor_posx // 8) * self.floor_now_x, (self.floor_posy // 4) * self.floor_now_y, 30, 30))
+#         self.rect = self.image.get_rect()
+#         self.rect.x, self.rect.y = pygame.display.get_window_size()[0] // 2, pygame.display.get_window_size()[1] // 2
+#         # new_image = pygame.transform.scale(image, (width, height))
+#
+#     def update(self):
+#         self.rect = player.rect
+#         self.image = self.floor.subsurface(
+#             ((self.floor_posx // 8) * self.floor_now_x, (self.floor_posy // 4) * self.floor_now_y, 30, 30))
+#         # self.image = pygame.transform.scale(self.image, (WIDTH // 2, HEIGHT // 2))
+#         print(self.image.)
 
 class CameraGroup(pygame.sprite.Group):
     def __init__(self):
@@ -126,12 +145,38 @@ class CameraGroup(pygame.sprite.Group):
                                 # sprite.image.fill(CYAN)
 
                             # else:
-                                # sprite.image.fill(RED)
+                            # sprite.image.fill(RED)
             # ENEMY OBJECTS COLLISION END
+
+            # FIELD
+            if player.rect.topright[0] > self.ground_rect.topright[0] - 20:
+                self.ground_rect = self.ground_surf.get_rect(topleft=(self.ground_rect.topright[0] - 20, 0))
+
+            elif player.rect.topleft[0] < self.ground_rect.topleft[0] + 20:
+                self.ground_rect = self.ground_surf.get_rect(topright=(self.ground_rect.topleft[0] + 20, 0))
+
+            # elif player.rect.y < self.ground_rect.top:
+            #     self.ground_rect = self.ground_surf.get_rect(bottom=player.rect.y - 20)
+            #
+            # elif player.rect.y > self.ground_rect.bottom:
+            #     self.ground_rect = self.ground_surf.get_rect(top=player.rect.y + 20)
+            #
+
+
+
+
+
+            # elif player.rect.y < self.ground_rect.top:
+            #     self.ground_rect = self.ground_surf.get_rect(bottom=player.rect.top)
+
+            #
+            # if player.rect.bottom > self.ground_rect.bottom:
+            #     self.ground_rect = self.ground_rect = self.ground_surf.get_rect(topleft=(player.rect.x, player.rect.y))
 
             offset_pos = sprite.rect.topleft - self.offset
             self.display_surface.blit(sprite.image, offset_pos)
             self.display_surface.blit(crosshair_img, pygame.mouse.get_pos())
+            # print(bg.get_rect().topleft, player.rect.x)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -155,7 +200,7 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.centerx -= self.speed
             self.directionx = 'LEFT'
         else:
-            self.rect.centerx += 1
+            self.rect.centerx += self.speed
 
         if self.rect.centery > player.rect.y:
             self.rect.centery -= self.speed
@@ -164,7 +209,7 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.centery += self.speed
             self.directiony = 'DOWN'
         else:
-            self.rect.centery += 1
+            self.rect.centery += self.speed
 
     def mob_reset(self):
         enem = Enemy()
@@ -183,12 +228,11 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = HEIGHT / 2
         self.walkLeft = False
         self.walkRight = True
-        self.speed = 4
+        self.speed = 8
 
     def update(self):
 
         key = pygame.key.get_pressed()
-        # print(f'--{self.anim_count}--{self.anim_count // 12}')
 
         # A N I M A T I O N
         if player.walkRight:
@@ -225,14 +269,31 @@ class Player(pygame.sprite.Sprite):
 projectiles = pygame.sprite.Group()
 camera_group = CameraGroup()
 enemy_group = pygame.sprite.Group()
+#
+# game_map = [['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
+#             ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1']]
+# game_map = [['1' for i in range(WIDTH //2)] for x in range(HEIGHT//2)]
+# game_map = game_map * 100
+# floor_group = pygame.sprite.Group()
+#
+# fl = Floor()
+# camera_group.add(fl)
 
 player = Player()
 camera_group.add(player)
 
-for i in range(200):
-    enem = Enemy()
-    camera_group.add(enem)
-    enemy_group.add(enem)
+# for i in range(5):
+#     enem = Enemy()
+#     camera_group.add(enem)
+#     enemy_group.add(enem)
 
 running = True
 while running:
@@ -245,6 +306,17 @@ while running:
                 projectile = Projectile()
                 projectiles.add(projectile)
                 camera_group.add(projectile)
+
+        # if event.type == pygame.KEYDOWN:
+        #
+        #     if event.key == pygame.K_LEFT:
+        #         fl.floor_now_x -= 1
+        #     if event.key == pygame.K_RIGHT:
+        #         fl.floor_now_x += 1
+        #     if event.key == pygame.K_UP:
+        #         fl.floor_now_y += 1
+        #     if event.key == pygame.K_DOWN:
+        #         fl.floor_now_y -= 1
 
     # camera & drawing
     camera_group.update()
